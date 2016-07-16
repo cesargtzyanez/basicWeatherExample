@@ -5,7 +5,7 @@
     var apikey="dc7afa473d1ae60c2917b26228818662";
     var apiUrl = "http://api.openweathermap.org/data/2.5/forecast?units=metric&lang=es&&apikey="+apikey+"&q=";
     var city = "mexico city, MX";
-    var weekDays=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+    var weekDays=['','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
     var months = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
     $(document).ready(function () {
@@ -13,16 +13,15 @@
     });
 
     $('#find_button').click(function () {
-        var city = $('#city_text').val();
+        city = $('#city_text').val();
         loadData(city);
     });
 
 
 
     function loadData(city) {
-        apiUrl+=city;
 
-        $.getJSON( apiUrl, function( data ) {
+        $.getJSON( apiUrl + city, function( data ) {
             var items = [];
             var currentDate="";
             $.each( data.list, function( key, val ) {
@@ -32,7 +31,6 @@
                 if( justDate != currentDate){
                     currentDate = justDate;
                     var day = new Date(currentDate);
-                    console.log( day.getDay() );
                     val.month = months[ Number(dateArray[1]) ];
                     val.weekDay = weekDays[day.getDay()];
                     val.day = Number(dateArray[2]);
@@ -40,13 +38,26 @@
                 }
             });
 
-            setTodayWeather(data,items)
+            setTodayWeather(data,items);
+            createForecast(items);
 
-            console.log(data);
             console.log(items);
         });
 
 
+    }
+
+    function clearInfo() {
+        city = '';
+        $('#todayWeather .location').html('');
+        $('#todayWeather .degree .num').html( '');
+        $('#todayWeather .forecast-icon img').attr('src','');
+        $('#todayWeather .rainIcon').html('');
+        $('#todayWeather .windIcon').html('');
+        $('#todayWeather .compassIcon').html('');
+
+        $('#dayName').html('');
+        $('.date').html('');
     }
 
     function setTodayWeather(allData,allItems) {
@@ -54,7 +65,10 @@
         $('#todayWeather .location').html(allData.city.name +', ' + allData.city.country +' hoy: '+todayItem.weather[0].description);
         $('#todayWeather .degree .num').html( Math.round(todayItem.main.temp) +'<sup>o</sup>C');
         $('#todayWeather .forecast-icon img').attr('src','http://openweathermap.org/img/w/'+todayItem.weather[0].icon+'.png');
-        $('#todayWeather .rainIcon').html('<img src="images/icon-umberella.png">'+todayItem.rain['3h']+'mm');
+
+        if( Boolean(todayItem.rain['3h'])) {
+            $('#todayWeather .rainIcon').html('<img src="images/icon-umberella.png">' + todayItem.rain['3h'] + 'mm');
+        }
         $('#todayWeather .windIcon').html('<img src="images/icon-wind.png">'+todayItem.wind.speed+'m/s');
         $('#todayWeather .compassIcon').html('<img src="images/icon-compass.png">'+allData.city.coord.lat+","+allData.city.coord.lat);
 
@@ -62,22 +76,26 @@
         $('.date').html(todayItem.dt_txt);
     }
 
-    function createForecast(allData) {
-        var newItem = '<div class="forecast">' +
-            '<div class="forecast-header">' +
-            '<div class="day">Tuesday</div>' +
-            '</div>' +
-            '<div class="forecast-content">' +
-            '<div class="forecast-icon">' +
-            '<img src="images/icons/icon-3.svg" alt="" width=48>' +
-            '</div>' +
-            '<div class="degree">23<sup>o</sup>C</div>' +
-            '<small>18<sup>o</sup></small>' +
-            '</div>' +
-            '</div>'
+    function createForecast(items) {
+        $('.newItem').remove();
 
-        $.each(allData,function () {
-            
+        $.each(items,function (key, val) {
+            if(key > 0) {
+                var newItem = document.createElement('div');
+
+                newItem.setAttribute('class', 'forecast newItem');
+                $(newItem).html('<div class="forecast-header">' +
+                    '<div class="day">'+ val.weekDay +'</div>' +
+                    '</div>' +
+                    '<div class="forecast-content">' +
+                    '<div class="forecast-icon">' +
+                    '<img src="http://openweathermap.org/img/w/'+val.weather[0].icon+'.png" alt="" width=48>' +
+                    '</div>' +
+                    '<div class="degree">'+Math.round( val.main.temp )+'<sup>o</sup>C</div>' +
+                    '</div>');
+
+                $('#itemsContainer').append(newItem);
+            }
         });
 
     }
